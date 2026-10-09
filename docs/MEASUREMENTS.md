@@ -111,3 +111,38 @@ Wine 의 GDI/CEF 텍스트 경로에는 영향이 있으나 WPF 의 폰트 열�
 XGetImage 는 이 HiDPI + Xinerama(6400x2160) 환경에서 창에 걸면 줄무늬로 나온다.
 루트 창에서 절대좌표로 잘라내는 방식(`scripts/shot_window.py`)을 넣어두었지만 계측의 최종 판정 기준은
 `ProbeKr` 의 `TryGetGlyphTypeface` 과 육안 확인을 쓴다.
+
+---
+
+## 9. 앱은 자기 폰트 이름을 wine 레지스트리에 요구한다 (도서 로딩)
+
+WPF 와는 **다른 층**이다. 앱은 ebook 본문(CEF/GDI) 을 그리며 자기 폰트 이름을 하드코딩으로
+요청하고, Wine 의 GDI 는 `HKLM\Software\Microsoft\Windows\CurrentVersion\Fonts` 의
+"가족 이름 (TrueType)" → 파일 매핑으로 그 이름을 푼다.
+
+| 단계 | 측정 |
+|---|---|
+| 조사·실험 중 `reg delete` 로 앱 폰트 매핑 41개 삭제 | **도서가 열리지 않음** (사용자 보고) |
+| `fonts_ttf.reg` 의 36개 매핑을 `reg add` 로 복원 | 등록 확인 32/32 (나머지는 Segoe UI* — 의도적 미등록), 앱 정상 기동 |
+| `HKLM\…\Fonts` 에 `Segoe UI (TrueType)` = `segoeui.ttf` 를 **살려둔 채** ProbeKr 실행 | `TryGetGlyphTypeface('Segoe UI') = False` (6개 family 미해결) |
+| `Segoe UI*` 매핑만 삭제하고 폰트 파일은 원복 → ProbeKr | **미해결 0 개** |
+| 레지스트리가 가리키는 `segoeui*.ttf` 4개를 한글 병합 face 로 교체 → ProbeKr | 여전히 False → 생성 폰트는 레지스트리 경로에서 MS 파서를 통과하지 못한다 |
+
+**결론 (이 저장소의 최종 설계)**
+- WPF 가 쓰는 이름(`Segoe UI`, `Arial` …)은 **fontconfig 만** 쓰게 하고 레지스트리에 등록하지 않는다.
+- 앱 ebook 이 쓰는 이름(`SEOULNAMSAN`, `UnDinaru`, `CREMA_MYUNGJO2B`, `Nanum*`, `Batang` …)만
+  prefix `C:\windows\Fonts` + 레지스트리에 등록한다 (원본은 `.orig-aladin` 백업).
+- 두 이름을 한的名字 공간에서 겹치게 하면 둘 중 하나가 죽는다. `register_prefix_fonts.py` 의
+  `WPF_NAMES` 가 그 중복을 자동 제외한다.
+
+## 10. 앱 바이너리 무변경 확인 (repro)
+
+```bash
+# 클린 설치본과 설치된 앱의 SHA-256 대조
+cp setup.exe ~/tmp/setup.exe           # wine 은 한글 경로를 C 로케일에서 못 연다 → ASCII 경로
+WINEPREFIX=~/tmp/verifyprefix WINEARCH=win32 wineboot -u
+WINEPREFIX=~/tmp/verifyprefix wine ~/tmp/setup.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES /DIR='c:\aladin_orig'
+# 설치 트리 265개 파일 해시 비교 → 262 동일, 차이 3 = unins000.dat(설치경로 문자열), GPUCache/index, GPUCache/data_1
+```
+
+`.exe` / `.dll` / `.config` 은 전부 동일. `AladinEbookViewer.exe` = `b6747a706d1d49a5…` (원본과 동일)

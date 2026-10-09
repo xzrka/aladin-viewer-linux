@@ -7,9 +7,10 @@ Wine 11 위에서 Windows 전용 **알라딘 Ebook PC Viewer**(`AladinEbookViewe
 ```
 트레이 / 창 제목 / 탭 라벨   →  정상 (Wine 이 캡션 폰트로 Noto CJK 를 골라서)
 툴바 · 로그인 버튼 · 입력장   →  □□□  (WPF 기본 폰트 "Segoe UI" 가 Wine 에 없어서)
+ ebook 본문 (도서 열기)      →  안 열림 (앱이 요구하는 폰트 이름이 레지스트리에 없어서)
 ```
 
-→ 해결 후: 창 제목뿐 아니라 툴바·버튼·입력장까지 전부 한글로 나옵니다.
+→ 해결 후: 창 제목·툴바·버튼·입력장은 물론 도서 본문까지 한글로 나옵니다.
 
 ---
 
@@ -23,7 +24,17 @@ SETUP=~/다운로드/AladinEbookViewerSetup_1.9.0.5.exe ./wine_aladin.sh install
 ./wine_aladin.sh run                                         # 5) 실행
 ```
 
-`./wine_aladin.sh fonts` 가 이 저장소의 핵심입니다.
+```
+`./wine_aladin.sh fonts` 가 이 저장소의 핵심입니다. 폰트를 **두 군데에 나눠** 설치합니다.
+
+| 누가 쓰는 이름 | 폰트 이름 | 설치 위치 | 근거 |
+|---|---|---|---|
+| WPF (툴바·로그인·입력장) | `Segoe UI`, `Arial` … | fontconfig 사용자 디렉터리 | WPF 는 fontconfig 만 봄 |
+| 앱 ebook 렌더링 (도서 본문) | `SEOULNAMSAN`, `UnDinaru`, `CREMA_MYUNGJO2B`, `Nanum*`, `Batang` … | wine prefix `C:\windows\Fonts` + 레지스트리 | GDI/CEF 는 `HKLM\…\Fonts` 매핑을 봄 |
+
+**두 이름을 한곳에 섞으면 안 됩니다.** WPF 가 쓰는 이름(`Segoe UI`)을 레지스트리에 등록하면
+WPF 가 fontconfig 사본 대신 그 파일을 쓰고 MS 파서가 생성 파일을 거부해 크롬이 다시 □ 가 됩니다
+(实测, 아래 측정 9 참조).
 
 ---
 
@@ -104,24 +115,20 @@ Ubuntu 22.04 / Pop!_OS 22.04 기본 wine 6.0.3 은 .NET Framework 4.8 을 지원
 32bit prefix(`~/.wine-aladin`) + `corefonts` + VC++ 런타임 + `dotnet48`.
 `dotnet48` 은 winetricks 에서 가장 취약한 단계라 2~3회 재시도가 정상입니다. 스크립트가 `dotnet472` 로 자동 폴백합니다.
 
-### 3) 한글 폰트 (핵심)
+### 3) 폰트 (핵심 — 두 층을 모두)
 
 ```bash
 ./wine_aladin.sh fonts
-# 또는: python3 scripts/install_kr_fonts.py
+# 1/2  scripts/install_kr_fonts.py      → ~/.local/share/fonts/aladin-wine-kr/   (WPF 용)
+# 2/2  scripts/register_prefix_fonts.py → $WINEPREFIX/drive_c/windows/Fonts + 레지스트리 (ebook 용)
 ```
 
-- `~/.local/share/fonts/aladin-wine-kr/` 에 43개 `.ttf` 생성·설치 → `fc-cache -f` → wineserver 재시작
-- 마지막에 **WPF 해석 검증**을 자동으로 돌립니다. 기대 출력:
-
-  ```
-  request 'Segoe UI': Source=Segoe UI  Baseline=0.921630859375  TryGetGlyphTypeface=True
-  request 'Malgun Gothic': ... TryGetGlyphTypeface=True
-  ...
-  미해결 family 0 개 → WPF 가 모든 이름을 해석했다
-  ```
-
-- 되돌리기: `python3 scripts/install_kr_fonts.py --uninstall && wineserver -k`
+- 1단계는 root 불필요·시스템 무변경, `--uninstall` 로 완전 원복.
+- 2단계는 prefix 안에 쓰며, 덮어쓰기 전 원본은 `<파일이름>.orig-aladin` 으로 백업합니다
+  (`register_prefix_fonts.py --uninstall` 이 복원). WPF 가 쓰는 이름은 등록하지 않습니다.
+- 마지막에 두 검증을 자동으로 돌립니다:
+  - `ProbeKr` → WPF family 의 `TryGetGlyphTypeface` (기대: **미해결 0 개**)
+  - 레지스트리 조회 → ebook 폰트 등록 확인 (기대: **32/32**)
 
 ### 4) 앱 설치 후 실행
 
@@ -172,6 +179,7 @@ HiDPI + 멀티모니터(이 측정 환경은 6400x2160 Xinerama)에서는 XGetIm
 | 실행 직후 종료, 로그에 `Failed to create secure store file` | UTF-8 로케일. `LANG=C LC_ALL=C` 필수 (`wine_aladin.sh run` 이 처리) |
 | 한글을 조합하는 순간 앱 종료, 로그에 `Unhandled exception: AccessViolation in user32.dll.DispatchMessage` | XIM(ibus) 입력. `NO_IME=1` → `XMODIFIERS=none` (기본 활성) |
 | 툴바·버튼·입력장만 □, 창 제목·탭은 정상 | WPF 기본 폰트 `Segoe UI` 미해석. `./wine_aladin.sh fonts` 후 **wineserver 재시작** (wineserver 가 꺼지지 않으면 폰트 목록이 갱신되지 않습니다) |
+| **도서가 안 열림 / 본문이 하얀 화면** | 앱이 ebook 렌더링에 쓰는 폰트 이름(`SEOULNAMSAN`, `UnDinaru`, `CREMA_MYUNGJO2B`, `Nanum*` …)이 레지스트리에서 빠지면 본문 렌더링이 죽습니다. `./wine_aladin.sh fonts` 의 2단계(`register_prefix_fonts.py`)가 되돌립니다. 实测 기록: docs/MEASUREMENTS.md 9 |
 | 폰트를 설치했는데도 □ | ① `fc-cache -f ~/.local/share/fonts/aladin-wine-kr` ② `wineserver -k` ③ `python3 scripts/install_kr_fonts.py --no-probe` 로 검증 재실행 |
 | ebook 본문까지 □ | ebook 은 CEF 이 `SEOULNAMSAN`/`UnDinaru`/`CREMA_MYUNGJO2B` 같은 앱 내장 이름을 씁니다. 이 스크립트가 그 이름들도 같은 처방으로 설치합니다 |
 | `csc.exe` 가 `fatal error CS2007: Unrecognized option: '/tmp/...'` | csc 는 POSIX 경로를 스위치로 오인합니다. `z:/tmp/...` 형태로 넘기세요 (스크립트가 처리) |
@@ -182,6 +190,7 @@ HiDPI + 멀티모니터(이 측정 환경은 6400x2160 Xinerama)에서는 XGetIm
 ## 이 저장소가 하지 않는 것
 
 - **앱 바이너리 수정 없음** — `setup.exe`, `AladinEbookViewer.exe`, DLL, `.NET` 파생 파일 등 설치된 파일을 전혀 고치지 않습니다.
+  (SHA-256 대조实测: 공식 설치 파일로 클린 설치한 265개 파일 중 262개 동일, 차이는 uninstaller DB + CEF GPU 캐시뿐)
 - **시스템(루트) 폰트 디렉터리 수정 없음** — `$XDG_DATA_HOME/fonts` 에만 설치하므로 root 가 필요 없고, `--uninstall` 로 완전히 되돌립니다.
 - **저작권 폰트 미포함** — Arial(msttcorefonts, MS EULA), 앱 내장 폰트(알라딘/제작사) 는 저장소에 없습니다.
   빌드 스크립트가 사용자 시스템에 이미 있는 사본을 그 자리에서 읽습니다.

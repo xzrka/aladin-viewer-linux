@@ -5,7 +5,7 @@
 # 사용법 (순서대로):
 #   1) sudo bash install_wine.sh          # WineHQ wine 9+ / 10+ / 11 + winetricks (root)
 #   2) ./wine_aladin.sh prefix            # prefix 생성 + corefonts/vcrun/dotnet48 (30~60분)
-#   3) ./wine_aladin.sh fonts             # WPF 크롬 한글 □□□ 해결 (폰트 생성·설치)
+#   3) ./wine_aladin.sh fonts             # WPF 크롬 + ebook 폰트 등록 (한글 □□□ / 도서 로딩)
 #   4) SETUP=./AladinEbookViewerSetup_1.9.0.5.exe ./wine_aladin.sh install
 #   5) ./wine_aladin.sh run               # 실행
 #   6) ./wine_aladin.sh trim              # pdb / TTS 음성 / 미사용 로케일 정리 (~600MB 회수)
@@ -52,8 +52,12 @@ cmd_prefix() {
 
 cmd_fonts() {
   command -v python3 >/dev/null || { echo "python3 필요"; exit 1; }
-  log "WPF 크롬 한글 폰트 생성·설치 (fontconfig 사용자 디렉터리)"
+  log "[1/2] WPF 크롬 (툴바·로그인·입력장) 용 폰트 → fontconfig 사용자 디렉터리"
   python3 "$HERE/scripts/install_kr_fonts.py" --prefix "$PREFIX" --no-restart
+  log "[2/2] 앱이 ebook 본문에 쓰는 폰트 이름 → wine prefix + 레지스트리 (미등록 시 도서 로딩 실패)"
+  python3 "$HERE/scripts/register_prefix_fonts.py" --prefix "$PREFIX" --no-restart
+  echo
+  echo "적용하려면 wineserver 재시작:  WINEPREFIX=$PREFIX wineserver -k  후 $0 run"
 }
 
 cmd_install() {
