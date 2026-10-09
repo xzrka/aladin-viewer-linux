@@ -1,0 +1,28 @@
+MIT License
+
+Copyright (c) 2026 xzrka
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+참고: 이 저장소는 알라딘의 소프트웨어/폰트/상표를 포함하지 않습니다.
+  - AladinEbookViewer 설치 파일(setup.exe): 알라딘(E BOOKS 알라딘) 최종 사용자 라이선스 적용.
+    이용자가 aladinviewer.aladin.co.kr/library 에서 직접 받아야 합니다.
+  - 원본 Arial(msttcorefonts): Microsoft EULA — 재배포 금지. 빌드 스크립트가 사용자
+    시스템에 설치된 사본을 그 자리에서 읽기만 합니다.
+  - 원본 Noto Sans CJK: SIL Open Font License 1.1.

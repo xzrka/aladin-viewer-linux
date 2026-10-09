@@ -1,0 +1,19 @@
+# 앱 설치 파일과 저작권 폰트는 저장소에 넣지 않습니다
+setup.exe
+AladinEbookViewerSetup*.exe
+fonts/
+merged_fonts/
+*.ttf
+*.ttc
+*.otf
+*.woff*
+
+# python
+__pycache__/
+*.pyc
+.ruff_cache/
+
+# 검증 산출물
+ProbeKr.exe
+*.png
+*.log
