@@ -26,12 +26,11 @@ Linux(Wine) 에 돌리면 세 가지가 깨집니다. 이 저장소는 그 원�
 ```bash
 sudo bash install_wine.sh                                    # 1) WineHQ wine 11 + winetricks
 ./wine_aladin.sh prefix                                      # 2) 32bit prefix + corefonts + dotnet48 (30~60분)
-./wine_aladin.sh fonts                                       # 3) 한글 폰트 생성·설치 (root 불필요)
+./wine_aladin.sh fonts                                       # 3) WPF + ebook 폰트 등록 (root 불필요)
 SETUP=~/다운로드/AladinEbookViewerSetup_1.9.0.5.exe ./wine_aladin.sh install   # 4) 앱 설치
 ./wine_aladin.sh run                                         # 5) 실행
 ```
 
-```
 `./wine_aladin.sh fonts` 가 이 저장소의 핵심입니다. 폰트를 **두 군데에 나눠** 설치합니다.
 
 | 누가 쓰는 이름 | 폰트 이름 | 설치 위치 | 근거 |
@@ -41,7 +40,7 @@ SETUP=~/다운로드/AladinEbookViewerSetup_1.9.0.5.exe ./wine_aladin.sh install
 
 **두 이름을 한곳에 섞으면 안 됩니다.** WPF 가 쓰는 이름(`Segoe UI`)을 레지스트리에 등록하면
 WPF 가 fontconfig 사본 대신 그 파일을 쓰고 MS 파서가 생성 파일을 거부해 크롬이 다시 □ 가 됩니다
-(实测, 아래 측정 9 참조).
+(실측, 아래 측정 9 참조).
 
 ---
 
@@ -60,7 +59,7 @@ Wine 의 `.NET 4.8` 은 **WPF** 를 내장하지 않습니다. `PresentationNati
 Wine 을 빌드한 리눅스 배포판의 fontconfig 에 `Segoe UI` 파일이 없으면 그 이름은 벽에 부딪힙니다.
 WPF 는 폰트가 없으면 **빈 상자를 그리지 않고 조용히 자체 기본 얼굴로 대체**하므로, 오류 없이 □만 남습니다.
 
-### 효과 없었던 것들 (实测)
+### 효과 없었던 것들 (실측)
 
 | 시도 | 결과 |
 |---|---|
@@ -144,7 +143,7 @@ SETUP=~/다운로드/AladinEbookViewerSetup_1.9.0.5.exe ./wine_aladin.sh install
 ./wine_aladin.sh run
 ```
 
-런처가 두 가지를 자동으로 처리합니다 (实测: 둘 다 빠지면 앱이 죽습니다):
+런처가 두 가지를 자동으로 처리합니다 (실측: 둘 다 빠지면 앱이 죽습니다):
 
 - `LANG=C LC_ALL=C` — **UTF-8 로케일에서 앱이 1초 만에 종료**합니다 (`Failed to create secure store file`, CEF 로케일 파싱 실패).
 - `NO_IME=1` (`XMODIFIERS=none`) — ibus/fcitx XIM 과 연결된 채로 한글을 조합하면 WPF 메시징이 `AccessViolation` 으로 크래시합니다.
@@ -186,7 +185,7 @@ HiDPI + 멀티모니터(이 측정 환경은 6400x2160 Xinerama)에서는 XGetIm
 | 실행 직후 종료, 로그에 `Failed to create secure store file` | UTF-8 로케일. `LANG=C LC_ALL=C` 필수 (`wine_aladin.sh run` 이 처리) |
 | 한글을 조합하는 순간 앱 종료, 로그에 `Unhandled exception: AccessViolation in user32.dll.DispatchMessage` | XIM(ibus) 입력. `NO_IME=1` → `XMODIFIERS=none` (기본 활성) |
 | 툴바·버튼·입력장만 □, 창 제목·탭은 정상 | WPF 기본 폰트 `Segoe UI` 미해석. `./wine_aladin.sh fonts` 후 **wineserver 재시작** (wineserver 가 꺼지지 않으면 폰트 목록이 갱신되지 않습니다) |
-| **도서가 안 열림 / 본문이 하얀 화면** | 앱이 ebook 렌더링에 쓰는 폰트 이름(`SEOULNAMSAN`, `UnDinaru`, `CREMA_MYUNGJO2B`, `Nanum*` …)이 레지스트리에서 빠지면 본문 렌더링이 죽습니다. `./wine_aladin.sh fonts` 의 2단계(`register_prefix_fonts.py`)가 되돌립니다. 实测 기록: docs/MEASUREMENTS.md 9 |
+| **도서가 안 열림 / 본문이 하얀 화면** | 앱이 ebook 렌더링에 쓰는 폰트 이름(`SEOULNAMSAN`, `UnDinaru`, `CREMA_MYUNGJO2B`, `Nanum*` …)이 레지스트리에서 빠지면 본문 렌더링이 죽습니다. `./wine_aladin.sh fonts` 의 2단계(`register_prefix_fonts.py`)가 되돌립니다. 실측 기록: docs/MEASUREMENTS.md 9 |
 | 폰트를 설치했는데도 □ | ① `fc-cache -f ~/.local/share/fonts/aladin-wine-kr` ② `wineserver -k` ③ `python3 scripts/install_kr_fonts.py --no-probe` 로 검증 재실행 |
 | ebook 본문까지 □ | ebook 은 CEF 이 `SEOULNAMSAN`/`UnDinaru`/`CREMA_MYUNGJO2B` 같은 앱 내장 이름을 씁니다. 이 스크립트가 그 이름들도 같은 처방으로 설치합니다 |
 | `csc.exe` 가 `fatal error CS2007: Unrecognized option: '/tmp/...'` | csc 는 POSIX 경로를 스위치로 오인합니다. `z:/tmp/...` 형태로 넘기세요 (스크립트가 처리) |
@@ -197,7 +196,7 @@ HiDPI + 멀티모니터(이 측정 환경은 6400x2160 Xinerama)에서는 XGetIm
 ## 이 저장소가 하지 않는 것
 
 - **앱 바이너리 수정 없음** — `setup.exe`, `AladinEbookViewer.exe`, DLL, `.NET` 파생 파일 등 설치된 파일을 전혀 고치지 않습니다.
-  (SHA-256 대조实测: 공식 설치 파일로 클린 설치한 265개 파일 중 262개 동일, 차이는 uninstaller DB + CEF GPU 캐시뿐)
+  (SHA-256 대조실측: 공식 설치 파일로 클린 설치한 265개 파일 중 262개 동일, 차이는 uninstaller DB + CEF GPU 캐시뿐)
 - **시스템(루트) 폰트 디렉터리 수정 없음** — `$XDG_DATA_HOME/fonts` 에만 설치하므로 root 가 필요 없고, `--uninstall` 로 완전히 되돌립니다.
 - **저작권 폰트 미포함** — Arial(msttcorefonts, MS EULA), 앱 내장 폰트(알라딘/제작사) 는 저장소에 없습니다.
   빌드 스크립트가 사용자 시스템에 이미 있는 사본을 그 자리에서 읽습니다.

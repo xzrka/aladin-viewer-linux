@@ -132,7 +132,7 @@ WPF 와는 **다른 층**이다. 앱은 ebook 본문(CEF/GDI) 을 그리며 자�
 - WPF 가 쓰는 이름(`Segoe UI`, `Arial` …)은 **fontconfig 만** 쓰게 하고 레지스트리에 등록하지 않는다.
 - 앱 ebook 이 쓰는 이름(`SEOULNAMSAN`, `UnDinaru`, `CREMA_MYUNGJO2B`, `Nanum*`, `Batang` …)만
   prefix `C:\windows\Fonts` + 레지스트리에 등록한다 (원본은 `.orig-aladin` 백업).
-- 두 이름을 한的名字 공간에서 겹치게 하면 둘 중 하나가 죽는다. `register_prefix_fonts.py` 의
+- 두 이름을 같은 이름 공간에서 겹치게 하면 둘 중 하나가 죽는다. `register_prefix_fonts.py` 의
   `WPF_NAMES` 가 그 중복을 자동 제외한다.
 
 ## 10. 앱 바이너리 무변경 확인 (repro)
