@@ -1,16 +1,23 @@
-# 알라딘 Ebook PC Viewer 를 Pop!_OS / Ubuntu + Wine 에서 한글 깨짐 없이 쓰기
+# Aladin Viewer on Linux
 
-Wine 11 위에서 Windows 전용 **알라딘 Ebook PC Viewer**(`AladinEbookViewer.exe`, .NET Framework 4.8 WPF + CEF)를
-돌릴 때, 앱 창 제목·탭은 한글이 나오는데 **툴바 · 로그인 버튼 · 입력장 placeholder 만 □□□ 로 깨지는** 문제가 있습니다.
-이 저장소는 그 원인을 측정으로 규명하고, **앱 바이너리를 한 바이트도 수정하지 않고** 해결하는 스크립트 모음입니다.
+**알라딘 Ebook PC Viewer 를 Ubuntu / Pop!_OS + Wine 에서 — 한글 □□□ 없이, 도서까지 열리게**
 
-```
-트레이 / 창 제목 / 탭 라벨   →  정상 (Wine 이 캡션 폰트로 Noto CJK 를 골라서)
-툴바 · 로그인 버튼 · 입력장   →  □□□  (WPF 기본 폰트 "Segoe UI" 가 Wine 에 없어서)
- ebook 본문 (도서 열기)      →  안 열림 (앱이 요구하는 폰트 이름이 레지스트리에 없어서)
-```
+Windows 전용 **알라딘 Ebook PC Viewer**(`AladinEbookViewer.exe`, .NET Framework 4.8 WPF + CEF)를
+Linux(Wine) 에 돌리면 세 가지가 깨집니다. 이 저장소는 그 원인을 측정으로 규명하고,
+**앱 바이너리를 한 바이트도 수정하지 않고** 전부 고치는 스크립트 모음입니다.
 
-→ 해결 후: 창 제목·툴바·버튼·입력장은 물론 도서 본문까지 한글로 나옵니다.
+| 위치 | 기본 상태 | 원인 |
+|---|---|---|
+| 창 제목 · 탭 라벨 | 정상 | Wine 캡션 폰트가 Noto CJK 를 골라서 |
+| 툴바 · 로그인 버튼 · 입력장 | **□□□** | WPF 기본 폰트 `"Segoe UI"` 가 Wine 에 없음 |
+| ebook 본문 (도서 열기) | **안 열림** | 앱이 요구하는 폰트 이름이 wine 레지스트리에 없음 |
+
+→ 해결 후: 창 제목·툴바·버튼·입력장은 물론 **도서 본문까지** 한글로 나옵니다.
+
+> **Running the Windows-only Aladin EPUB reader on Linux/Wine.**
+> Fixes the □ (missing-glyph) UI text and the book-loading failure — two separate font-resolution
+> layers (WPF ← fontconfig, app ebook rendering ← wine registry). No patching of `setup.exe`,
+> `AladinEbookViewer.exe` or any DLL (verified by SHA-256 against a clean install).
 
 ---
 
