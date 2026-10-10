@@ -29,6 +29,7 @@ sudo bash install_wine.sh                                    # 1) WineHQ wine 11
 ./wine_aladin.sh fonts                                       # 3) WPF + ebook 폰트 등록 (root 불필요)
 SETUP=~/다운로드/AladinEbookViewerSetup_1.9.0.5.exe ./wine_aladin.sh install   # 4) 앱 설치
 ./wine_aladin.sh run                                         # 5) 실행
+./wine_aladin.sh desktop                                     # 6) 앱 메뉴 / 바탕화면 바로가기
 ```
 
 `./wine_aladin.sh fonts` 가 이 저장소의 핵심입니다. 폰트를 **두 군데에 나눠** 설치합니다.
@@ -148,7 +149,27 @@ SETUP=~/다운로드/AladinEbookViewerSetup_1.9.0.5.exe ./wine_aladin.sh install
 - `LANG=C LC_ALL=C` — **UTF-8 로케일에서 앱이 1초 만에 종료**합니다 (`Failed to create secure store file`, CEF 로케일 파싱 실패).
 - `NO_IME=1` (`XMODIFIERS=none`) — ibus/fcitx XIM 과 연결된 채로 한글을 조합하면 WPF 메시징이 `AccessViolation` 으로 크래시합니다.
 
-### 5) 용량 정리 (선택)
+### 5) 앱 메뉴 / 바탕화면 바로가기
+
+```bash
+./wine_aladin.sh desktop
+```
+
+이게 없으면 **프로그램 메뉴에서 알라딘 뷰어를 켰을 때 아무 일도 일어나지 않습니다**. 두 가지가 동시에 걸리기 때문입니다 (실측):
+
+1. `wine` 설치자는 설치에 쓴 **prefix 절대경로**를 박아 `~/.local/share/applications/wine/Programs/…desktop` 를 만듭니다. 그 prefix 를 옮기거나 지우면 바로가기만 남아 죽어 있습니다.
+2. 그 Exec 에 로케일이 들어가 있지 않으면, 데스크톱 세션(UTF-8) 에서 켜는 순간 앱이 1초 만에 종료합니다.
+
+`make_desktop_entry.py` 는 죽은 wine 항목을 정리하고 Exec 을 이렇게 씁니다:
+
+```
+Exec=env LANG=C LC_ALL=C XMODIFIERS=none WINEPREFIX=~/.wine-aladin wine "…/AladinEbookViewer.exe"
+```
+
+`desktop-file-validate` 로 검증하고, `Path=` 는 앱 설치 디렉터리(ASCII 경로) 로 둡니다
+(wine 은 C 로케일에서 한글 경로를 연다 실패하고 `Z:\windows` 에서 시작합니다).
+
+### 6) 용량 정리 (선택)
 
 ```bash
 ./wine_aladin.sh trim     # pdb / TTS 음성 / 미사용 로케일 정리, TTS '읽어주기' 기능은 사라짐
@@ -188,6 +209,7 @@ HiDPI + 멀티모니터(이 측정 환경은 6400x2160 Xinerama)에서는 XGetIm
 | **도서가 안 열림 / 본문이 하얀 화면** | 앱이 ebook 렌더링에 쓰는 폰트 이름(`SEOULNAMSAN`, `UnDinaru`, `CREMA_MYUNGJO2B`, `Nanum*` …)이 레지스트리에서 빠지면 본문 렌더링이 죽습니다. `./wine_aladin.sh fonts` 의 2단계(`register_prefix_fonts.py`)가 되돌립니다. 실측 기록: docs/MEASUREMENTS.md 9 |
 | 폰트를 설치했는데도 □ | ① `fc-cache -f ~/.local/share/fonts/aladin-wine-kr` ② `wineserver -k` ③ `python3 scripts/install_kr_fonts.py --no-probe` 로 검증 재실행 |
 | ebook 본문까지 □ | ebook 은 CEF 이 `SEOULNAMSAN`/`UnDinaru`/`CREMA_MYUNGJO2B` 같은 앱 내장 이름을 씁니다. 이 스크립트가 그 이름들도 같은 처방으로 설치합니다 |
+| **프로그램 메뉴에서 켰을 때 아무 일도 없거나 1초 만에 종료** | wine 설치기가 만든 .desktop 이 **설치 때 쓴 prefix 경로**를 박아두기 때문입니다. 그 prefix 를 옮기거나 지우면 바로가기만 남아 죽어 있습니다 (실측). `./wine_aladin.sh desktop` 으로 재생성 — 죽은 항목 정리 + `LANG=C LC_ALL=C XMODIFIERS=none` 이 들어간 Exec |
 | `csc.exe` 가 `fatal error CS2007: Unrecognized option: '/tmp/...'` | csc 는 POSIX 경로를 스위치로 오인합니다. `z:/tmp/...` 형태로 넘기세요 (스크립트가 처리) |
 | 폰트 파일이 2.5MB 나 됩니다 | 43 face × 1.2만 글리프. 원치 않으면 `make_kr_fonts.py` 의 `FAMILIES` 를 줄이세요 (적어도 `segoeui.ttf` 1 개면 WPF 크롬은 해결됩니다) |
 

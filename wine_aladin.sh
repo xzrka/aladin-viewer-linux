@@ -8,8 +8,9 @@
 #   3) ./wine_aladin.sh fonts             # WPF 크롬 + ebook 폰트 등록 (한글 □□□ / 도서 로딩)
 #   4) SETUP=./AladinEbookViewerSetup_1.9.0.5.exe ./wine_aladin.sh install
 #   5) ./wine_aladin.sh run               # 실행
-#   6) ./wine_aladin.sh trim              # pdb / TTS 음성 / 미사용 로케일 정리 (~600MB 회수)
-#   7) ./wine_aladin.sh size              # 디스크 사용량
+#   6) ./wine_aladin.sh desktop           # 앱 메뉴 / 바탕화면 바로가기 (로케일 안전 Exec)
+#   7) ./wine_aladin.sh trim              # pdb / TTS 음성 / 미사용 로케일 정리 (~600MB 회수)
+#   8) ./wine_aladin.sh size              # 디스크 사용량
 #
 # ※ 앱 설치 파일(setup.exe) 은 저작권이 있는 알라딘 배포물이므로 이 저장소에 포함하지 않습니다.
 #    aladinviewer.aladin.co.kr/library 에서 받아 SETUP= 경로로 지정하세요.
@@ -94,12 +95,19 @@ cmd_trim() {
   echo "정리 완료 (TTS '읽어주기' 기능은 사용 불가)"
 }
 
+cmd_desktop() {
+  command -v python3 >/dev/null || { echo "python3 필요"; exit 1; }
+  log "앱 메뉴 / 바탕화면 바로가기 재생성 (죽은 wine 항목 정리 + 로케일_safe Exec)"
+  python3 "$HERE/scripts/make_desktop_entry.py" --prefix "$PREFIX"
+}
+
 cmd_size() { du -sh "$PREFIX" 2>/dev/null; du -sh "$INSTALL_DIR" 2>/dev/null; }
 
 case "${1:-}" in
   prefix)  cmd_prefix ;;
   fonts)   cmd_fonts ;;
   install) cmd_install ;;
+  desktop) cmd_desktop ;;
   run)     cmd_run ;;
   trim)    cmd_trim ;;
   size)    cmd_size ;;

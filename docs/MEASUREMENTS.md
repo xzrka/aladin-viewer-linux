@@ -146,3 +146,19 @@ WINEPREFIX=~/tmp/verifyprefix wine ~/tmp/setup.exe /VERYSILENT /NORESTART /SUPPR
 ```
 
 `.exe` / `.dll` / `.config` 은 전부 동일. `AladinEbookViewer.exe` = `b6747a706d1d49a5…` (원본과 동일)
+
+---
+
+## 11. 프로그램 메뉴 바로가기 (wine menubuilder 의 절대경로)
+
+| 확인 | 결과 |
+|---|---|
+| `~/.local/share/applications/wine/Programs/…/Aladin Ebook PC Viewer.desktop` 의 `Exec` | `env "WINEPREFIX=/home/…/tmp/verifyprefix" wine "C:\\…\\Aladin Ebook PC Viewer.lnk"` |
+| 그 prefix 의 존재 여부 | **없음** (검증용으로 만들었다가 삭제한 임시 prefix) |
+| 같은 조건(UTF-8 로케일) 로 Exec 직접 실행 | 앱이 1초 만에 종료 (`Failed to create secure store file`) |
+| `.desktop` 의 `Exec` 을 `env LANG=C LC_ALL=C XMODIFIERS=none WINEPREFIX=~/.wine-aladin wine "<exe>"` 로 교체 | 앱 기동 확인 (창 1325x867 매핑, 크래시 0) |
+| `desktop-file-validate` | `Categories` 의 `Wine` 은 미등록 값 → `X-Wine` 으로 (exit 0) |
+
+`grep -rl "tmp/verifyprefix" ~/.local/share/applications` → 6개 (앱 1 + wine-extension hlp/crt/msp/chm/vbs 5).
+wine 설치자(menubuilder) 는 파일 연동 항목까지 설치 prefix 경로로 만들기 때문에, prefix 를 정리할 때
+이 .desktop 들도 함께 정리해야 한다. `scripts/make_desktop_entry.py` 가 그 정리 + 재생성을 겸한다.
